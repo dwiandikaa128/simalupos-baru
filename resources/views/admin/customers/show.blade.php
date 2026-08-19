@@ -166,7 +166,7 @@
             @csrf
             <div>
                 <label class="block text-label-md font-semibold mb-1">Nominal Top-Up (Rp)</label>
-                <input type="number" name="amount" min="1000" step="1000" required placeholder="Contoh: 50000" class="w-full py-2.5 px-4 rounded-xl border border-outline-variant text-body-sm focus:border-primary-container">
+                <input type="text" inputmode="numeric" name="amount" required placeholder="Contoh: 50.000" class="w-full py-2.5 px-4 rounded-xl border border-outline-variant text-body-sm focus:border-primary-container format-rupiah">
             </div>
             <div>
                 <label class="block text-label-md font-semibold mb-1">Metode Pembayaran</label>

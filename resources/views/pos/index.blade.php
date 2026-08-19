@@ -261,7 +261,7 @@
 
             <div id="cashInputContainer" class="mb-6">
                 <p class="font-semibold text-label-md mb-2">Uang Diterima (Rp)</p>
-                <input type="number" id="amountPaid" class="w-full py-4 px-4 text-title-sm font-bold rounded-xl border border-outline-variant focus:border-primary-container bg-surface" placeholder="0">
+                <input type="text" inputmode="numeric" id="amountPaid" class="w-full py-4 px-4 text-title-sm font-bold rounded-xl border border-outline-variant focus:border-primary-container bg-surface format-rupiah" placeholder="0">
                 <div class="grid grid-cols-4 gap-2 mt-3" id="quickCashButtons">
                     <!-- Populated via JS -->
                 </div>
@@ -1580,14 +1580,19 @@
         }
 
         function setPaidAmount(amount) {
-            document.getElementById('amountPaid').value = amount;
+            const elem = document.getElementById('amountPaid');
+            elem.value = amount ? Number(amount).toLocaleString('id-ID') : '';
             checkPaymentStatus();
         }
 
-        document.getElementById('amountPaid').addEventListener('input', checkPaymentStatus);
+        document.getElementById('amountPaid').addEventListener('input', function() {
+            formatRupiahInput(this);
+            checkPaymentStatus();
+        });
 
         function checkPaymentStatus() {
-            const paid = Number(document.getElementById('amountPaid').value) || 0;
+            const rawVal = document.getElementById('amountPaid').value.replace(/[^0-9]/g, '');
+            const paid = Number(rawVal) || 0;
             const btn = document.getElementById('btnProcessPayment');
             const changeContainer = document.getElementById('changeContainer');
             const changeDisplay = document.getElementById('changeDisplay');
@@ -1718,7 +1723,7 @@
                     customer_id: selectedCustomer ? selectedCustomer.id : null,
                     payment_method: apiPaymentMethod,
                     payment_option: selectedCardOption,
-                    amount_paid: apiPaymentMethod === 'cash' ? document.getElementById('amountPaid').value : orderTotal,
+                    amount_paid: apiPaymentMethod === 'cash' ? Number(document.getElementById('amountPaid').value.replace(/[^0-9]/g, '')) : orderTotal,
                     save_change_to_membership: document.getElementById('saveChangeToMembership')?.checked || false
                 };
 

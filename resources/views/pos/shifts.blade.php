@@ -47,7 +47,7 @@
                         </div>
                         <div>
                             <label class="block text-label-md font-semibold mb-1">Jumlah (Rp)</label>
-                            <input type="number" name="amount" min="1" required placeholder="0" class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm">
+                            <input type="text" inputmode="numeric" name="amount" required placeholder="0" class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm format-rupiah">
                         </div>
 
                         {{-- Toggle: Tambahkan ke stok bahan --}}
@@ -226,15 +226,15 @@
                     @endif
                     <div>
                         <label class="block text-label-md font-semibold mb-1">Total Uang Fisik Di Laci (Rp)</label>
-                        <input type="number" id="actualClosingCash" name="actual_closing_cash" required class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm text-success" oninput="calculateNet()">
+                        <input type="text" inputmode="numeric" id="actualClosingCash" name="actual_closing_cash" required class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm text-success format-rupiah" oninput="calculateNet()">
                     </div>
                     <div>
                         <label class="block text-label-md font-semibold mb-1">Modal Ditinggalkan Untuk Besok (Rp)</label>
-                        <input type="number" id="cashLeft" name="cash_left_for_next_shift" required value="0" min="0" class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm" oninput="calculateNet()">
+                        <input type="text" inputmode="numeric" id="cashLeft" name="cash_left_for_next_shift" required value="0" class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm format-rupiah" oninput="calculateNet()">
                     </div>
                     <div>
                         <label class="block text-label-md font-semibold mb-1">Pendapatan Bersih (Net Revenue) Rp</label>
-                        <input type="number" id="netRevenue" name="net_revenue" required class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm text-primary">
+                        <input type="text" inputmode="numeric" id="netRevenue" name="net_revenue" required class="w-full p-3 rounded-xl border border-outline-variant font-bold text-title-sm text-primary format-rupiah">
                         <p class="text-label-sm text-on-surface-variant mt-1">Otomatis dihitung: Total Uang Laci - Modal Awal. Bisa diubah jika ada pengeluaran kasbon.</p>
                     </div>
                     <div><label class="block text-label-md font-semibold mb-1">Catatan Tambahan (Opsional)</label><textarea name="notes" class="w-full p-3 rounded-xl border border-outline-variant resize-none" rows="2"></textarea></div>
@@ -251,9 +251,12 @@
     <script>
         function calculateNet() {
             const modalAwal = parseFloat(document.getElementById('modalAwal')?.value || 0);
-            const actualClosing = parseFloat(document.getElementById('actualClosingCash').value || 0);
+            const rawActual = document.getElementById('actualClosingCash').value.replace(/[^0-9]/g, '');
+            const actualClosing = parseFloat(rawActual || 0);
             const net = actualClosing - modalAwal;
-            document.getElementById('netRevenue').value = net > 0 ? net : 0;
+            const netElem = document.getElementById('netRevenue');
+            const netVal = net > 0 ? net : 0;
+            netElem.value = netVal ? Number(netVal).toLocaleString('id-ID') : '0';
         }
 
         // ============================================

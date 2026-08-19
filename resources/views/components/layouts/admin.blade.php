@@ -147,5 +147,34 @@
 
     @vite(['resources/js/app.js'])
     @stack('scripts')
+
+    <script>
+        function formatRupiahInput(element) {
+            if (!element) return;
+            let rawValue = element.value.replace(/[^0-9]/g, '');
+            if (!rawValue) {
+                element.value = '';
+                return;
+            }
+            element.value = Number(rawValue).toLocaleString('id-ID');
+        }
+
+        document.addEventListener('input', function (e) {
+            if (e.target && (e.target.classList.contains('format-rupiah') || e.target.hasAttribute('data-format-rupiah'))) {
+                formatRupiahInput(e.target);
+            }
+        });
+
+        document.addEventListener('submit', function (e) {
+            const form = e.target;
+            if (form && typeof form.querySelectorAll === 'function') {
+                form.querySelectorAll('.format-rupiah, [data-format-rupiah]').forEach(input => {
+                    if (input.value) {
+                        input.value = input.value.replace(/[^0-9]/g, '');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
