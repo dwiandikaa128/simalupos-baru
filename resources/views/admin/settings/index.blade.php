@@ -83,7 +83,139 @@
                 </div>
             </div>
 
+            <!-- Section WhatsApp Bot Status & QR Scanner -->
+            <div class="bg-white rounded-xl border border-outline-variant p-6 space-y-4 shadow-sm" id="waBotSection">
+                <div class="flex items-center justify-between border-b border-outline-variant pb-3 mb-4">
+                    <h3 class="text-title-sm font-bold flex items-center gap-2 text-primary-container">
+                        <span class="material-symbols-outlined text-primary">chat</span>
+                        WhatsApp Bot Notifikasi & Scan QR Code
+                    </h3>
+                    <div id="waStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
+                        <span>Mengecek status...</span>
+                    </div>
+                </div>
+
+                <!-- Box Content Dynamic -->
+                <div id="waStatusContent" class="text-center py-6">
+                    <div class="inline-block animate-spin text-primary">
+                        <span class="material-symbols-outlined text-[32px]">sync</span>
+                    </div>
+                    <p class="text-body-sm text-on-surface-variant mt-2">Menghubungkan ke layanan WA Bot...</p>
+                </div>
+            </div>
+
             <button type="submit" class="px-8 py-3 bg-primary text-on-primary rounded-xl font-semibold text-body-sm min-h-[48px]">Simpan Pengaturan</button>
         </form>
     </div>
+
+    @push('scripts')
+    <script>
+        let waPollTimer = null;
+
+        async function checkWaBotStatus() {
+            try {
+                const res = await fetch("{{ route('admin.settings.wa-status') }}");
+                const data = await res.json();
+                const badge = document.getElementById('waStatusBadge');
+                const content = document.getElementById('waStatusContent');
+
+                if (!badge || !content) return;
+
+                if (data.status === 'connected') {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 flex items-center gap-1.5';
+                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span>WA Bot Terhubung</span>';
+                    
+                    const userPhone = data.user && data.user.id ? data.user.id.split(':')[0] : 'Akun Terverifikasi';
+
+                    content.innerHTML = `
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 max-w-md mx-auto space-y-4">
+                            <div class="w-14 h-14 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto shadow-md">
+                                <span class="material-symbols-outlined text-[32px]">check_circle</span>
+                            </div>
+                            <div>
+                                <h4 class="text-title-md font-bold text-emerald-900">WhatsApp Bot Berhasil Terhubung!</h4>
+                                <p class="text-body-sm text-emerald-700 mt-1">Nomor Bot: <strong class="font-mono text-emerald-900">+${userPhone}</strong></p>
+                                <p class="text-xs text-emerald-600 mt-2">Notifikasi otomatis transaksi POS & mutasi member akan dikirimkan secara langsung via nomor ini.</p>
+                            </div>
+                            <button type="button" onclick="logoutWaBot()" class="px-4 py-2 border border-rose-300 bg-white text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold transition-colors inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px]">logout</span>
+                                Putuskan Koneksi / Logout WA
+                            </button>
+                        </div>
+                    `;
+                } else if (data.status === 'qr_ready' && data.qr) {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 flex items-center gap-1.5';
+                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span> <span>Scan QR Code</span>';
+
+                    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(data.qr)}`;
+
+                    content.innerHTML = `
+                        <div class="bg-white border border-outline-variant rounded-2xl p-6 max-w-md mx-auto space-y-4 shadow-sm">
+                            <div class="text-center space-y-1">
+                                <h4 class="text-title-sm font-bold text-on-surface">Scan QR Code WhatsApp</h4>
+                                <p class="text-xs text-on-surface-variant">Buka WhatsApp di HP ➔ Perangkat Tertaut (Linked Devices) ➔ Scan QR dibawah ini</p>
+                            </div>
+                            <div class="bg-surface p-4 rounded-xl inline-block border border-outline-variant">
+                                <img src="${qrImageUrl}" alt="QR Code WA Bot" class="w-60 h-60 mx-auto rounded-lg shadow-sm">
+                            </div>
+                            <div class="flex items-center justify-center gap-2 text-xs text-amber-700 bg-amber-50 py-2 px-3 rounded-xl border border-amber-200">
+                                <span class="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                                Halaman ini akan otomatis terhubung setelah QR di-scan
+                            </div>
+                        </div>
+                    `;
+                } else if (data.status === 'connecting') {
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-700 border border-blue-500/20 flex items-center gap-1.5';
+                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> <span>Inisialisasi...</span>';
+
+                    content.innerHTML = `
+                        <div class="py-8 space-y-3">
+                            <div class="inline-block animate-spin text-primary">
+                                <span class="material-symbols-outlined text-[36px]">hourglass_top</span>
+                            </div>
+                            <p class="text-body-sm font-semibold text-on-surface">Menyiapkan QR Code WhatsApp...</p>
+                            <p class="text-xs text-on-surface-variant">Mohon tunggu beberapa detik, QR code akan segera tampil.</p>
+                        </div>
+                    `;
+                } else {
+                    // Offline / Service down
+                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-700 border border-rose-500/20 flex items-center gap-1.5';
+                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500"></span> <span>Layanan Offline</span>';
+
+                    content.innerHTML = `
+                        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-6 max-w-md mx-auto text-center space-y-3">
+                            <span class="material-symbols-outlined text-rose-600 text-[40px]">wifi_off</span>
+                            <h4 class="text-title-sm font-bold text-rose-900">Layanan WhatsApp Bot Belum Berjalan</h4>
+                            <p class="text-xs text-rose-700">Pastikan microservice Node.js di folder <code class="bg-white px-1.5 py-0.5 rounded border border-rose-200 font-mono">wa-bot</code> sudah dijalankan di server (port 3000).</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Failed to fetch WA Bot status:', e);
+            }
+        }
+
+        async function logoutWaBot() {
+            if (!confirm('Apakah Anda yakin ingin memutuskan koneksi akun WhatsApp Bot?')) return;
+            try {
+                await fetch("{{ route('admin.settings.wa-logout') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+                checkWaBotStatus();
+            } catch (e) {
+                alert('Gagal logout WA Bot.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkWaBotStatus();
+            waPollTimer = setInterval(checkWaBotStatus, 3000);
+        });
+    </script>
+    @endpush
 </x-layouts.admin>

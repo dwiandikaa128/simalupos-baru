@@ -90,4 +90,41 @@ class WhatsAppNotificationService
                    "Cek kartu & mutasi: {$publicUrl}";
         }
     }
+
+    /**
+     * Get current status of WA Bot & QR string
+     */
+    public function getBotStatus(): array
+    {
+        try {
+            $statusUrl = str_replace('/send-message', '/status', $this->botUrl);
+            $response = Http::timeout(3)->get($statusUrl);
+            if ($response->successful()) {
+                return $response->json();
+            }
+        } catch (\Exception $e) {
+            // Offline / Unreachable
+        }
+
+        return [
+            'success' => false,
+            'status' => 'offline',
+            'qr' => null,
+            'user' => null,
+        ];
+    }
+
+    /**
+     * Trigger logout on WA Bot
+     */
+    public function logoutBot(): bool
+    {
+        try {
+            $logoutUrl = str_replace('/send-message', '/logout', $this->botUrl);
+            $response = Http::timeout(5)->post($logoutUrl);
+            return $response->successful();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }

@@ -105,6 +105,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
 
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('settings/wa-status', [SettingsController::class, 'getWaStatus'])->name('settings.wa-status');
+    Route::post('settings/wa-logout', [SettingsController::class, 'logoutWaBot'])->name('settings.wa-logout');
     Route::resource('printer-settings', PrinterSettingsController::class)->except('show');
 
     // Operational Costs

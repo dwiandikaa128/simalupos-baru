@@ -29,4 +29,15 @@ class SettingsController extends Controller
 
         return redirect()->route('admin.settings.index')->with('success', 'Pengaturan berhasil disimpan!');
     }
+
+    public function getWaStatus(\App\Services\WhatsAppNotificationService $service)
+    {
+        return response()->json($service->getBotStatus());
+    }
+
+    public function logoutWaBot(\App\Services\WhatsAppNotificationService $service)
+    {
+        $success = $service->logoutBot();
+        return response()->json(['success' => $success]);
+    }
 }
