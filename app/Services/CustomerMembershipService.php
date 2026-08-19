@@ -39,7 +39,11 @@ class CustomerMembershipService
                 'created_by' => $userId ?? auth()->id(),
             ]);
 
-            SendWaNotificationJob::dispatchSync($mutation);
+            try {
+                SendWaNotificationJob::dispatchSync($mutation);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('WhatsApp Notification Dispatch Error: ' . $e->getMessage());
+            }
 
             return $mutation;
         });
@@ -78,7 +82,11 @@ class CustomerMembershipService
                 'created_by' => $userId ?? auth()->id(),
             ]);
 
-            SendWaNotificationJob::dispatchSync($mutation);
+            try {
+                SendWaNotificationJob::dispatchSync($mutation);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('WhatsApp Notification Dispatch Error: ' . $e->getMessage());
+            }
 
             return $mutation;
         });
@@ -113,7 +121,11 @@ class CustomerMembershipService
                 'created_by' => $userId ?? auth()->id(),
             ]);
 
-            SendWaNotificationJob::dispatchSync($mutation);
+            try {
+                SendWaNotificationJob::dispatchSync($mutation);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('WhatsApp Notification Dispatch Error: ' . $e->getMessage());
+            }
 
             return $mutation;
         });

@@ -78,7 +78,7 @@ class CustomerController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:1000',
-            'payment_method' => 'required|string|in:cash,qris,transfer',
+            'payment_method' => 'nullable|string',
             'notes' => 'nullable|string|max:255',
         ]);
 
