@@ -130,6 +130,9 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
 
     // Stock Opname
     Route::get('stock-opname', [StockOpnameController::class, 'index'])->name('stock-opname.index');
+    Route::get('stock-opname/create', [StockOpnameController::class, 'create'])->name('stock-opname.create');
+    Route::post('stock-opname', [StockOpnameController::class, 'store'])->name('stock-opname.store');
+
 
     // Simalu Membership
     Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);

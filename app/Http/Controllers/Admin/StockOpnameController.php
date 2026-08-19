@@ -47,4 +47,67 @@ class StockOpnameController extends Controller
         ));
     }
 
+    public function create()
+    {
+        $ingredients = Ingredient::with('category')->active()->orderBy('name')->get();
+        return view('admin.stock-opname.create', compact('ingredients'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'opname_date' => 'required|date',
+            'items' => 'required|array|min:1',
+            'items.*.ingredient_id' => 'required|exists:ingredients,id',
+            'items.*.actual_qty' => 'required|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['items'] as $item) {
+                $ingredient = Ingredient::lockForUpdate()->findOrFail($item['ingredient_id']);
+                $systemQty = (float) $ingredient->current_qty;
+                $actualQty = (float) $item['actual_qty'];
+                $difference = $actualQty - $systemQty;
+
+                $adjustmentType = 'match';
+                if ($difference > 0.01) {
+                    $adjustmentType = 'surplus';
+                } elseif ($difference < -0.01) {
+                    $adjustmentType = 'deficit';
+                }
+
+                StockOpname::create([
+                    'ingredient_id' => $ingredient->id,
+                    'user_id' => auth()->id(),
+                    'system_qty' => $systemQty,
+                    'actual_qty' => $actualQty,
+                    'difference' => $difference,
+                    'adjustment_type' => $adjustmentType,
+                    'notes' => $validated['notes'] ?? null,
+                    'opname_date' => $validated['opname_date'],
+                ]);
+
+                // Adjust stock if there's a difference
+                if ($adjustmentType !== 'match') {
+                    $ingredient->update(['current_qty' => $actualQty]);
+
+                    InventoryMovement::create([
+                        'ingredient_id' => $ingredient->id,
+                        'type' => 'adjustment',
+                        'quantity' => $difference,
+                        'unit_cost' => $ingredient->unitCost(),
+                        'total_cost' => abs($difference) * $ingredient->unitCost(),
+                        'qty_before' => $systemQty,
+                        'qty_after' => $actualQty,
+                        'notes' => "Penyesuaian stock opname: {$adjustmentType} (" . format_qty(abs($difference)) . " {$ingredient->unit})",
+                    ]);
+                }
+            }
+        });
+
+        return redirect()->route('admin.stock-opname.index')
+            ->with('success', 'Stock opname berhasil disimpan dan stok telah disesuaikan!');
+    }
 }
+
