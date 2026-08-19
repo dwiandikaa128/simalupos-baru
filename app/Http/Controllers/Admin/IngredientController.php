@@ -5,9 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Ingredient;
 use App\Models\IngredientCategory;
+use App\Models\IngredientPurchase;
+use App\Models\InventoryMovement;
+use App\Models\AppSetting;
+use App\Models\ActivityLog;
 use App\Services\InventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class IngredientController extends Controller
 {
@@ -164,5 +169,48 @@ class IngredientController extends Controller
         $inventoryService->recordPurchase($ingredient, $validated);
 
         return back()->with('success', 'Pembelian bahan berhasil dicatat dan stok bertambah!');
+    }
+
+    public function destroyPurchase(Request $request, IngredientPurchase $ingredientPurchase)
+    {
+        $voidPin = AppSetting::get('void_pin');
+        if (!empty($voidPin)) {
+            if (empty($request->pin) || $request->pin !== $voidPin) {
+                return back()->with('error', 'PIN / Password Keamanan (Void) salah atau belum diisi!');
+            }
+        }
+
+        $ingredient = $ingredientPurchase->ingredient;
+        $qtyPurchased = (float) $ingredientPurchase->quantity;
+        $cost = (float) $ingredientPurchase->total_cost;
+
+        DB::transaction(function () use ($ingredientPurchase, $ingredient, $qtyPurchased, $cost) {
+            if ($ingredient) {
+                $ingredient = Ingredient::lockForUpdate()->find($ingredient->id);
+                if ($ingredient) {
+                    $qtyBefore = (float) $ingredient->current_qty;
+                    $qtyAfter = max(0, $qtyBefore - $qtyPurchased);
+
+                    $ingredient->update(['current_qty' => $qtyAfter]);
+
+                    InventoryMovement::create([
+                        'ingredient_id' => $ingredient->id,
+                        'ingredient_purchase_id' => $ingredientPurchase->id,
+                        'type' => 'adjustment',
+                        'quantity' => -$qtyPurchased,
+                        'unit_cost' => $ingredientPurchase->unit_cost,
+                        'total_cost' => $cost,
+                        'qty_before' => $qtyBefore,
+                        'qty_after' => $qtyAfter,
+                        'notes' => "Rollback stok pembelian bahan dihapus: {$ingredient->name}",
+                    ]);
+                }
+            }
+
+            $ingredientPurchase->delete();
+            ActivityLog::log('delete_purchase', "Hapus pembelian bahan {$ingredient?->name}: Qty {$qtyPurchased}");
+        });
+
+        return back()->with('success', 'Riwayat pembelian/stok masuk berhasil dihapus dan stok telah disesuaikan kembali.');
     }
 }

@@ -5,6 +5,8 @@
         'shop_phone' => $settings['shop_phone'],
         'receipt_header' => $settings['receipt_header'],
         'receipt_footer' => $settings['receipt_footer'],
+        'show_order_number' => ($settings['show_order_number'] ?? 'true') === 'true',
+        'is_reprint' => $isReprint ?? false,
         'time' => $order->paid_at ? $order->paid_at->format('d/m/Y H:i') : $order->created_at->format('d/m/Y H:i'),
         'cashier' => $cashierName,
         'order_number' => $order->order_number,
@@ -59,13 +61,16 @@
                     <h1 class="text-xl font-bold uppercase mb-1">{{ $settings['shop_name'] }}</h1>
                     <p class="text-sm whitespace-pre-line">{{ $settings['shop_address'] }}</p>
                     <p class="text-sm">{{ $settings['shop_phone'] }}</p>
+                    <div id="reprintBadge" class="{{ ($isReprint ?? false) ? '' : 'hidden' }} mt-2 py-1 border-y border-dashed border-black font-extrabold text-center tracking-widest text-base uppercase">*** REPRINT ***</div>
                     @if($settings['receipt_header'])<p class="text-sm mt-2 border-t border-dashed border-black pt-2">{{ $settings['receipt_header'] }}</p>@endif
                 </div>
 
                 <div class="text-sm mb-4 pb-4 border-b border-dashed border-black">
                     <div class="flex justify-between mb-1"><span>Waktu:</span> <span>{{ $order->paid_at ? $order->paid_at->format('d/m/Y H:i') : $order->created_at->format('d/m/Y H:i') }}</span></div>
                     <div class="flex justify-between mb-1"><span>Kasir:</span> <span>{{ $cashierName }}</span></div>
+                    @if(($settings['show_order_number'] ?? 'true') === 'true')
                     <div class="flex justify-between mb-1"><span>No. TRX:</span> <span>{{ $order->order_number }}</span></div>
+                    @endif
                     <div class="flex justify-between mb-1"><span>Tipe:</span> <span class="uppercase">{{ str_replace('_', ' ', $order->order_type) }} {{ $order->table_number ? '(#'.$order->table_number.')' : '' }}</span></div>
                     <div class="flex justify-between"><span>Pelanggan:</span> <span>{{ $order->customer_name ?? '-' }}</span></div>
                 </div>
@@ -288,6 +293,10 @@
             lines.push(centerText(receiptData.shop_name, width));
             wrapText(receiptData.shop_address, width).forEach(line => lines.push(centerText(line, width)));
             if (receiptData.shop_phone) lines.push(centerText(receiptData.shop_phone, width));
+            if (receiptData.is_reprint) {
+                lines.push(separator);
+                lines.push(centerText('*** REPRINT ***', width));
+            }
             if (receiptData.receipt_header) {
                 lines.push(separator);
                 wrapText(receiptData.receipt_header, width).forEach(line => lines.push(centerText(line, width)));
@@ -295,7 +304,9 @@
             lines.push(separator);
             lines.push(leftRight('Waktu', receiptData.time, width));
             lines.push(leftRight('Kasir', receiptData.cashier, width));
-            lines.push(leftRight('No. TRX', receiptData.order_number, width));
+            if (receiptData.show_order_number) {
+                lines.push(leftRight('No. TRX', receiptData.order_number, width));
+            }
             lines.push(leftRight('Tipe', receiptData.order_type, width));
             lines.push(leftRight('Pelanggan', receiptData.customer_name, width));
             lines.push(separator);
@@ -359,6 +370,11 @@
             parts.push(escBold(false));
             wrapText(receiptData.shop_address, width).forEach(line => parts.push(textBytes(line)));
             if (receiptData.shop_phone) parts.push(textBytes(receiptData.shop_phone));
+            if (receiptData.is_reprint) {
+                parts.push(escAlign(0), textBytes(separator), escAlign(1), escBold(true));
+                parts.push(textBytes('*** REPRINT ***'));
+                parts.push(escBold(false));
+            }
             if (receiptData.receipt_header) {
                 parts.push(escAlign(0), textBytes(separator), escAlign(1));
                 wrapText(receiptData.receipt_header, width).forEach(line => parts.push(textBytes(line)));
@@ -367,7 +383,9 @@
             parts.push(escAlign(0), textBytes(separator));
             parts.push(textBytes(leftRight('Waktu', receiptData.time, width)));
             parts.push(textBytes(leftRight('Kasir', receiptData.cashier, width)));
-            parts.push(textBytes(leftRight('No. TRX', receiptData.order_number, width)));
+            if (receiptData.show_order_number) {
+                parts.push(textBytes(leftRight('No. TRX', receiptData.order_number, width)));
+            }
             parts.push(textBytes(leftRight('Tipe', receiptData.order_type, width)));
             parts.push(textBytes(leftRight('Pelanggan', receiptData.customer_name, width)));
             parts.push(textBytes(separator));
@@ -419,6 +437,12 @@
                 setPrintButtonState('printing');
                 const characteristic = await getBluetoothPrinterCharacteristic();
                 await writePrinterBytes(characteristic, buildEscPosBytes());
+                
+                // After clicking print, set is_reprint to true for subsequent prints
+                receiptData.is_reprint = true;
+                const badge = document.getElementById('reprintBadge');
+                if (badge) badge.classList.remove('hidden');
+
                 setPrintButtonState('connected', 'Print');
             } catch (error) {
                 console.error(error);

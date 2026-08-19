@@ -129,10 +129,10 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="text-body-sm font-bold text-danger">{{ format_rupiah(-$expense->amount) }}</span>
-                                <form method="POST" action="{{ route('pos.cash-expenses.destroy', $expense) }}" onsubmit="return confirm('{{ $expense->isIngredientPurchase() ? 'Hapus pengeluaran ini? Stok bahan yang sudah ditambahkan akan DIKURANGI kembali!' : 'Hapus pengeluaran ini?' }}')">
+                                <form method="POST" action="{{ route('pos.cash-expenses.destroy', $expense) }}" id="delete-expense-{{ $expense->id }}">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="w-8 h-8 bg-red-100 text-danger rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200">
+                                    <button type="button" onclick="deleteExpenseWithPin(this, {{ $expense->isIngredientPurchase() ? 'true' : 'false' }})" class="w-8 h-8 bg-red-100 text-danger rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200" title="Hapus pengeluaran">
                                         <span class="material-symbols-outlined text-[18px]">delete</span>
                                     </button>
                                 </form>
@@ -255,6 +255,175 @@
             const net = actualClosing - modalAwal;
             document.getElementById('netRevenue').value = net > 0 ? net : 0;
         }
+
+        // ============================================
+        // Bluetooth Printer + Cash Drawer (Laci Kasir)
+        // ============================================
+        const printerProfiles = [
+            {
+                service: '0000ffe0-0000-1000-8000-00805f9b34fb',
+                characteristics: ['0000ffe1-0000-1000-8000-00805f9b34fb'],
+            },
+            {
+                service: '000018f0-0000-1000-8000-00805f9b34fb',
+                characteristics: ['00002af1-0000-1000-8000-00805f9b34fb'],
+            },
+            {
+                service: '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+                characteristics: ['49535343-8841-43f4-a8d4-ecbe34729bb3'],
+            },
+            {
+                service: 'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+                characteristics: ['bef8d6c9-9c21-4c9e-b632-bd58c1009f9f'],
+            },
+        ];
+
+        let bluetoothPrinterDevice = null;
+        let bluetoothPrinterCharacteristic = null;
+
+        async function ensureBluetoothPrinterCharacteristic() {
+            if (bluetoothPrinterCharacteristic && bluetoothPrinterDevice?.gatt?.connected) {
+                return bluetoothPrinterCharacteristic;
+            }
+
+            if (!navigator.bluetooth) {
+                throw new Error('Browser tidak mendukung Web Bluetooth.');
+            }
+
+            if (!bluetoothPrinterDevice && navigator.bluetooth.getDevices) {
+                const devices = await navigator.bluetooth.getDevices();
+                bluetoothPrinterDevice = devices.find(device => device.name) || null;
+            }
+
+            if (!bluetoothPrinterDevice) {
+                bluetoothPrinterDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: printerProfiles.map(profile => profile.service),
+                });
+            }
+
+            if (!bluetoothPrinterDevice.gatt) {
+                throw new Error('Device tidak menyediakan GATT/BLE.');
+            }
+
+            const server = await bluetoothPrinterDevice.gatt.connect();
+            bluetoothPrinterCharacteristic = null;
+
+            for (const profile of printerProfiles) {
+                try {
+                    const service = await server.getPrimaryService(profile.service);
+                    for (const characteristicUuid of profile.characteristics) {
+                        try {
+                            bluetoothPrinterCharacteristic = await service.getCharacteristic(characteristicUuid);
+                            break;
+                        } catch (e) {}
+                    }
+                    if (bluetoothPrinterCharacteristic) break;
+                } catch (e) {}
+            }
+
+            if (!bluetoothPrinterCharacteristic) {
+                server.disconnect();
+                throw new Error('Service BLE printer tidak ditemukan.');
+            }
+
+            return bluetoothPrinterCharacteristic;
+        }
+
+        async function writePrinterBytes(characteristic, bytes) {
+            const chunkSize = 120;
+            for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+                const chunk = bytes.slice(offset, offset + chunkSize);
+                if (characteristic.properties.writeWithoutResponse && characteristic.writeValueWithoutResponse) {
+                    await characteristic.writeValueWithoutResponse(chunk);
+                } else if (characteristic.properties.write && characteristic.writeValueWithResponse) {
+                    await characteristic.writeValueWithResponse(chunk);
+                } else {
+                    await characteristic.writeValue(chunk);
+                }
+                await new Promise(resolve => setTimeout(resolve, 35));
+            }
+        }
+
+        // Buka laci kasir via ESC/POS command
+        async function openCashDrawer() {
+            try {
+                const characteristic = await ensureBluetoothPrinterCharacteristic();
+                // ESC p m t1 t2 - Pin 2 (0x00), pulse ON 25ms*t1, pulse OFF 25ms*t2
+                const kickDrawerPin2 = Uint8Array.from([0x1B, 0x70, 0x00, 0x19, 0xFA]);
+                await writePrinterBytes(characteristic, kickDrawerPin2);
+                console.log('Cash drawer opened successfully');
+                return true;
+            } catch (error) {
+                console.warn('Gagal membuka laci kasir:', error);
+                return false;
+            }
+        }
+
+        // Intercept form submit: buka laci dulu, baru submit form
+        async function submitFormWithDrawerKick(form) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[18px]">sync</span> Membuka laci...';
+            }
+
+            try {
+                // Timeout 5 detik - jangan sampai form tidak tersubmit karena bluetooth gagal
+                await Promise.race([
+                    openCashDrawer(),
+                    new Promise(resolve => setTimeout(resolve, 5000))
+                ]);
+            } catch (e) {
+                console.warn('Cash drawer timeout/error, melanjutkan submit form:', e);
+            }
+
+            // Submit form secara normal
+            form.removeEventListener('submit', handleShiftFormSubmit);
+            form.submit();
+        }
+
+        function handleShiftFormSubmit(e) {
+            e.preventDefault();
+            submitFormWithDrawerKick(e.target);
+        }
+
+        function deleteExpenseWithPin(button, isIngredient) {
+            const msg = isIngredient 
+                ? 'Hapus pengeluaran ini? Stok bahan yang sudah ditambahkan akan DIKURANGI kembali!\n\nMasukkan PIN / Password Keamanan Admin (Void):'
+                : 'Hapus pengeluaran kas keluar ini?\n\nMasukkan PIN / Password Keamanan Admin (Void):';
+            
+            const pin = prompt(msg);
+            if (pin === null) return;
+            if (!pin.trim()) {
+                alert('PIN / Password Keamanan wajib diisi.');
+                return;
+            }
+            
+            const form = button.closest('form');
+            let pinInput = form.querySelector('input[name="pin"]');
+            if (!pinInput) {
+                pinInput = document.createElement('input');
+                pinInput.type = 'hidden';
+                pinInput.name = 'pin';
+                form.appendChild(pinInput);
+            }
+            pinInput.value = pin;
+            form.submit();
+        }
+
+        // Pasang event listener ke semua form shift (buka & tutup)
+        document.addEventListener('DOMContentLoaded', () => {
+            const openShiftForm = document.querySelector('#open-shift-modal form');
+            const closeShiftForm = document.querySelector('#close-shift-modal form');
+
+            if (openShiftForm) {
+                openShiftForm.addEventListener('submit', handleShiftFormSubmit);
+            }
+            if (closeShiftForm) {
+                closeShiftForm.addEventListener('submit', handleShiftFormSubmit);
+            }
+        });
     </script>
     @endpush
 </x-layouts.pos>

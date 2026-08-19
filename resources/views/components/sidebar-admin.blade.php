@@ -69,6 +69,12 @@
 
         <p class="px-3 py-2 mt-4 text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Manajemen</p>
 
+        <a href="{{ route('admin.customers.index') }}"
+           class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-xl text-body-sm font-medium {{ request()->routeIs('admin.customers.*') ? 'active' : 'text-on-surface-variant hover:bg-surface-dim' }}">
+            <span class="material-symbols-outlined text-[20px]">card_membership</span>
+            Simalu Membership
+        </a>
+
         <a href="{{ route('admin.employees.index') }}"
            class="sidebar-link flex items-center gap-3 px-3 py-3 rounded-xl text-body-sm font-medium {{ request()->routeIs('admin.employees.*') ? 'active' : 'text-on-surface-variant hover:bg-surface-dim' }}">
             <span class="material-symbols-outlined text-[20px]">group</span>

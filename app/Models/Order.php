@@ -10,16 +10,19 @@ use Carbon\Carbon;
 class Order extends Model
 {
     protected $fillable = [
-        'order_number', 'user_id', 'customer_name', 'table_number',
+        'order_number', 'user_id', 'customer_id', 'customer_name', 'table_number',
         'order_type', 'status', 'payment_method', 'payment_option', 'payment_status',
+        'paid_by_membership', 'change_to_membership',
         'subtotal', 'discount_amount', 'service_charge_amount', 'tax_amount', 'total_amount',
         'amount_paid', 'change_amount', 'notes', 'voucher_code',
-        'held_at', 'paid_at',
+        'held_at', 'paid_at', 'print_count',
     ];
 
     protected function casts(): array
     {
         return [
+            'paid_by_membership' => 'decimal:2',
+            'change_to_membership' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'service_charge_amount' => 'decimal:2',
@@ -31,6 +34,12 @@ class Order extends Model
             'paid_at' => 'datetime',
         ];
     }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
 
     public function user(): BelongsTo
     {

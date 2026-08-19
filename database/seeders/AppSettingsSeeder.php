@@ -19,6 +19,7 @@ class AppSettingsSeeder extends Seeder
             ['key' => 'receipt_header', 'value' => 'SimaluCoffee - Specialty Coffee', 'group' => 'receipt'],
             ['key' => 'receipt_footer', 'value' => 'Terima kasih telah berkunjung! ☕', 'group' => 'receipt'],
             ['key' => 'receipt_show_logo', 'value' => 'true', 'group' => 'receipt'],
+            ['key' => 'show_order_number', 'value' => 'true', 'group' => 'receipt'],
             ['key' => 'qris_merchant_id', 'value' => 'ID1234567890', 'group' => 'payment'],
             ['key' => 'cash_enabled', 'value' => 'true', 'group' => 'payment'],
             ['key' => 'qris_enabled', 'value' => 'true', 'group' => 'payment'],
@@ -26,7 +27,10 @@ class AppSettingsSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            AppSetting::create($setting);
+            AppSetting::updateOrCreate(
+                ['key' => $setting['key']],
+                ['value' => $setting['value'], 'group' => $setting['group']]
+            );
         }
     }
 }

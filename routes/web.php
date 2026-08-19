@@ -66,6 +66,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
     Route::patch('ingredients/{ingredient}', [IngredientController::class, 'updateIngredient'])->name('ingredients.update');
     Route::delete('ingredients/{ingredient}', [IngredientController::class, 'destroyIngredient'])->name('ingredients.destroy');
     Route::post('ingredient-purchases', [IngredientController::class, 'storePurchase'])->name('ingredient-purchases.store');
+    Route::delete('ingredient-purchases/{ingredientPurchase}', [IngredientController::class, 'destroyPurchase'])->name('ingredient-purchases.destroy');
 
     Route::get('stocks', [StockController::class, 'index'])->name('stocks.index');
 
@@ -129,7 +130,15 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
 
     // Stock Opname
     Route::get('stock-opname', [StockOpnameController::class, 'index'])->name('stock-opname.index');
+
+    // Simalu Membership
+    Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class);
+    Route::post('customers/{customer}/topup', [\App\Http\Controllers\Admin\CustomerController::class, 'topUp'])->name('customers.topup');
+    Route::get('customers/{customer}/pdf', [\App\Http\Controllers\Admin\CustomerController::class, 'downloadPdf'])->name('customers.pdf');
 });
+
+// Public Membership View
+Route::get('/membership/{token}', [\App\Http\Controllers\Public\MembershipController::class, 'show'])->name('public.membership.show');
 
 // ============================================
 // BARISTA / POS ROUTES (middleware: auth)
@@ -137,18 +146,25 @@ Route::prefix('admin')->middleware(['auth', 'role:admin'])->name('admin.')->grou
 Route::prefix('pos')->middleware(['auth'])->name('pos.')->group(function () {
     Route::get('/dashboard', [BaristaDashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/', [PosController::class, 'index'])->name('index');
-    Route::get('/products', [PosController::class, 'products'])->name('products');
-    Route::post('/orders', [PosController::class, 'createOrder'])->name('orders.create');
-    Route::patch('/orders/{order}/hold', [PosController::class, 'holdOrder'])->name('orders.hold');
-    Route::get('/orders/held', [PosController::class, 'heldOrders'])->name('orders.held');
-    Route::patch('/orders/{order}/resume', [PosController::class, 'resumeOrder'])->name('orders.resume');
-    Route::patch('/orders/{order}/pay', [PosController::class, 'processPayment'])->name('orders.pay');
-    Route::patch('/orders/{order}/cancel', [PosController::class, 'cancelOrder'])->name('orders.cancel');
-    Route::post('/vouchers/validate', [PosController::class, 'validateVoucher'])->name('vouchers.validate');
+    Route::middleware(['require_active_shift'])->group(function () {
+        Route::get('/', [PosController::class, 'index'])->name('index');
+        Route::get('/products', [PosController::class, 'products'])->name('products');
+        Route::post('/orders', [PosController::class, 'createOrder'])->name('orders.create');
+        Route::patch('/orders/{order}/hold', [PosController::class, 'holdOrder'])->name('orders.hold');
+        Route::get('/orders/held', [PosController::class, 'heldOrders'])->name('orders.held');
+        Route::patch('/orders/{order}/resume', [PosController::class, 'resumeOrder'])->name('orders.resume');
+        Route::patch('/orders/{order}/pay', [PosController::class, 'processPayment'])->name('orders.pay');
+        Route::patch('/orders/{order}/cancel', [PosController::class, 'cancelOrder'])->name('orders.cancel');
+        Route::post('/vouchers/validate', [PosController::class, 'validateVoucher'])->name('vouchers.validate');
 
-    Route::get('/orders/{order}/receipt', [ReceiptController::class, 'show'])->name('receipt.show');
-    Route::get('/orders/{order}/receipt/print', [ReceiptController::class, 'print'])->name('receipt.print');
+        // Customer Membership POS API
+        Route::get('/customers/search', [PosController::class, 'searchCustomers'])->name('customers.search');
+        Route::post('/customers', [PosController::class, 'storeCustomer'])->name('customers.store');
+
+        Route::get('/orders/{order}/receipt', [ReceiptController::class, 'show'])->name('receipt.show');
+        Route::get('/orders/{order}/receipt/print', [ReceiptController::class, 'print'])->name('receipt.print');
+    });
+
 
     Route::get('/queue', [OrderQueueController::class, 'index'])->name('queue.index');
     Route::patch('/orders/{order}/complete', [OrderQueueController::class, 'complete'])->name('queue.complete');

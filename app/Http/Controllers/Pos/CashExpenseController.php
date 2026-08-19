@@ -73,13 +73,21 @@ class CashExpenseController extends Controller
         return back()->with('success', 'Kas keluar berhasil dicatat!' . ($request->ingredient_id ? ' Stok bahan telah ditambahkan.' : ''));
     }
 
-    public function destroy(CashExpense $cashExpense)
+    public function destroy(Request $request, CashExpense $cashExpense)
     {
         $user = auth()->user();
         $shift = $cashExpense->shift;
 
-        if ($shift->status !== 'active') {
+        if ($shift && $shift->status !== 'active') {
             return back()->with('error', 'Tidak bisa menghapus pengeluaran pada shift yang sudah ditutup!');
+        }
+
+        // Validate Security / Void PIN if set in AppSetting
+        $voidPin = \App\Models\AppSetting::get('void_pin');
+        if (!empty($voidPin)) {
+            if (empty($request->pin) || $request->pin !== $voidPin) {
+                return back()->with('error', 'PIN / Password Keamanan salah!');
+            }
         }
 
         $desc = $cashExpense->description;

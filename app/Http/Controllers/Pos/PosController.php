@@ -103,11 +103,14 @@ class PosController extends Controller
             'table_number' => 'nullable|string|max:20',
             'order_type' => 'required|in:dine_in,takeaway,online',
             'voucher_code' => 'nullable|string',
+            'manual_discount_percent' => 'nullable|numeric|min:0|max:100',
             'notes' => 'nullable|string',
             'is_held' => 'nullable|boolean',
             'held_order_id' => 'nullable|exists:orders,id',
-            'payment_method' => 'nullable|string|in:cash,qris,debit,credit,transfer,ojol',
+            'payment_method' => 'nullable|string|in:cash,qris,debit,credit,transfer,ojol,simalu_membership',
             'payment_option' => 'nullable|string|max:50',
+            'customer_id' => 'nullable|exists:customers,id',
+            'save_change_to_membership' => 'nullable|boolean',
         ]);
 
         if ($request->filled('held_order_id')) {
@@ -141,11 +144,14 @@ class PosController extends Controller
             ];
         }
 
-        // Voucher discount
+        // Discount Calculation
         $discountAmount = 0;
         $voucherCode = null;
         $usedVoucher = null;
-        if ($request->filled('voucher_code')) {
+        
+        if ($request->filled('manual_discount_percent') && $request->manual_discount_percent > 0) {
+            $discountAmount = $subtotal * ($request->manual_discount_percent / 100);
+        } elseif ($request->filled('voucher_code')) {
             $voucher = Voucher::where('code', strtoupper($request->voucher_code))->first();
             if ($voucher) {
                 $validation = $voucher->isValid($subtotal);
@@ -185,10 +191,19 @@ class PosController extends Controller
         $taxAmount = ($subtotal - $discountAmount + $serviceChargeAmount) * ($taxRate / 100);
         $totalAmount = $subtotal - $discountAmount + $serviceChargeAmount + $taxAmount;
 
+        $customerName = $request->customer_name;
+        if ($request->filled('customer_id')) {
+            $cust = \App\Models\Customer::find($request->customer_id);
+            if ($cust) {
+                $customerName = $cust->name;
+            }
+        }
+
         $order = Order::create([
             'order_number' => Order::generateOrderNumber(),
             'user_id' => auth()->id(),
-            'customer_name' => $request->customer_name,
+            'customer_id' => $request->customer_id,
+            'customer_name' => $customerName,
             'table_number' => $request->table_number,
             'order_type' => $request->order_type,
             'status' => $request->is_held ? 'held' : 'pending',
@@ -263,9 +278,11 @@ class PosController extends Controller
     public function processPayment(Request $request, Order $order, InventoryService $inventoryService)
     {
         $request->validate([
-            'payment_method' => 'required|in:cash,qris,debit,credit,transfer,ojol',
+            'payment_method' => 'required|in:cash,qris,debit,credit,transfer,ojol,simalu_membership',
             'payment_option' => 'nullable|string|max:50',
             'amount_paid' => 'nullable|numeric|min:0',
+            'customer_id' => 'nullable|exists:customers,id',
+            'save_change_to_membership' => 'nullable|boolean',
         ]);
 
         if ($order->payment_status === 'paid') {
@@ -276,18 +293,50 @@ class PosController extends Controller
             ]);
         }
 
+        $customerId = $request->customer_id ?? $order->customer_id;
         $amountPaid = $request->amount_paid ?? $order->total_amount;
         $changeAmount = max(0, $amountPaid - $order->total_amount);
+        $paidByMembership = 0;
+        $changeToMembership = 0;
 
         try {
-            DB::transaction(function () use ($request, $order, $amountPaid, $changeAmount, $inventoryService) {
+            DB::transaction(function () use ($request, $order, $customerId, $amountPaid, $changeAmount, &$paidByMembership, &$changeToMembership, $inventoryService) {
+                $membershipService = app(\App\Services\CustomerMembershipService::class);
+
+                // Handle payment via Simalu Membership
+                if ($request->payment_method === 'simalu_membership') {
+                    if (!$customerId) {
+                        throw new \Exception('Silakan pilih member terlebih dahulu untuk pembayaran Simalu Membership.');
+                    }
+
+                    $paidByMembership = $order->total_amount;
+                    $membershipService->payWithBalance($customerId, $paidByMembership, $order->id);
+                    
+                    $amountPaid = $order->total_amount;
+                    $changeAmount = 0;
+                }
+
+                // Handle save change to membership if requested
+                if ($request->save_change_to_membership && $changeAmount > 0) {
+                    if (!$customerId) {
+                        throw new \Exception('Silakan pilih member untuk menyimpan uang kembalian ke saldo.');
+                    }
+
+                    $changeToMembership = $changeAmount;
+                    $membershipService->saveChangeToBalance($customerId, $changeToMembership, $order->id);
+                    $changeAmount = 0; // Reset change to 0 since it went into membership balance
+                }
+
                 $order->update([
+                    'customer_id' => $customerId,
                     'payment_method' => $request->payment_method,
                     'payment_option' => $request->payment_option,
                     'payment_status' => 'paid',
                     'status' => 'processing',
                     'amount_paid' => $amountPaid,
                     'change_amount' => $changeAmount,
+                    'paid_by_membership' => $paidByMembership,
+                    'change_to_membership' => $changeToMembership,
                     'paid_at' => now(),
                 ]);
 
@@ -309,29 +358,85 @@ class PosController extends Controller
             \Log::error('Payment processing failed: ' . $e->getMessage(), ['order_id' => $order->id]);
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memproses pembayaran: ' . $e->getMessage(),
-            ], 500);
+                'message' => $e->getMessage(),
+            ], 422);
         }
 
         ActivityLog::log('process_payment', "Pembayaran pesanan {$order->order_number} via {$request->payment_method}", $order);
 
         return response()->json([
             'success' => true,
-            'order' => $order->fresh()->load('items'),
+            'order' => $order->fresh()->load('items', 'customer'),
             'message' => 'Pembayaran berhasil!',
         ]);
     }
 
-    public function cancelOrder(Order $order, InventoryService $inventoryService)
+    public function searchCustomers(Request $request)
     {
+        $search = $request->query('query', '');
+        $customers = \App\Models\Customer::where('status', 'active')
+            ->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            })
+            ->limit(10)
+            ->get();
+
+        return response()->json($customers);
+    }
+
+    public function storeCustomer(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'phone' => 'required|string|max:20|unique:customers,phone',
+        ]);
+
+        $phone = \App\Models\Customer::formatPhoneNumber($request->phone);
+
+        $customer = \App\Models\Customer::create([
+            'name' => $request->name,
+            'phone' => $phone,
+            'balance' => 0,
+            'status' => 'active',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'customer' => $customer,
+            'message' => 'Member baru berhasil ditambahkan!',
+        ]);
+    }
+
+
+    public function cancelOrder(Request $request, Order $order, InventoryService $inventoryService)
+    {
+        $voidPin = \App\Models\AppSetting::get('void_pin');
+        
+        if (empty($voidPin)) {
+            return response()->json(['success' => false, 'message' => 'Fitur Void belum diaktifkan oleh Admin (PIN belum diatur).'], 403);
+        }
+        
+        if ($request->pin !== $voidPin) {
+            return response()->json(['success' => false, 'message' => 'PIN/Password Void salah.'], 403);
+        }
+
         if ($order->payment_status === 'paid') {
             $inventoryService->restoreForCancelledOrder($order);
+            
+            // Decrease shift stats if this order was paid and counted in the current active shift
+            $shift = auth()->user()->activeShift();
+            if ($shift) {
+                // Determine if we should decrease (we just assume yes since it's the current shift balance)
+                $shift->decrement('total_sales', $order->total_amount);
+                $shift->decrement('total_transactions');
+            }
         }
 
         $order->update(['status' => 'cancelled']);
-        ActivityLog::log('cancel_order', "Membatalkan pesanan {$order->order_number}", $order);
+        ActivityLog::log('cancel_order', "Membatalkan pesanan {$order->order_number} (Void)", $order);
 
-        return response()->json(['success' => true, 'message' => 'Pesanan dibatalkan']);
+        return response()->json(['success' => true, 'message' => 'Pesanan berhasil dibatalkan (Void)']);
     }
 
     public function validateVoucher(Request $request)

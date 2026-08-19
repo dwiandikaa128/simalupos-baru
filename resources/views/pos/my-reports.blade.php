@@ -96,12 +96,23 @@
                             </div>
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-label-sm text-on-surface-variant">
                                 <span>{{ optional($order->paid_at)->format('H:i') ?? $order->created_at->format('H:i') }} &middot; {{ $order->payment_method ?? '-' }}</span>
-                                <span class="uppercase text-success font-semibold">Dibayar</span>
+                                @if($order->status === 'cancelled')
+                                    <span class="uppercase text-danger font-semibold">Dibatalkan</span>
+                                @else
+                                    <span class="uppercase text-success font-semibold">Dibayar</span>
+                                @endif
                             </div>
                         </div>
-                        <a href="{{ route('pos.receipt.show', $order->id) }}" class="shrink-0 flex items-center justify-center p-2 rounded-xl bg-surface border border-outline-variant text-on-surface hover:bg-surface-dim hover:text-primary transition-colors" title="Cetak Ulang Struk">
-                            <span class="material-symbols-outlined text-[20px]">print</span>
-                        </a>
+                        <div class="flex gap-2">
+                            @if($order->status !== 'cancelled' && !$isHistory)
+                            <button type="button" onclick="openVoidModal({{ $order->id }}, '{{ $order->order_number }}')" class="shrink-0 flex items-center justify-center p-2 rounded-xl bg-red-50 border border-red-200 text-danger hover:bg-red-100 transition-colors" title="Void Transaksi">
+                                <span class="material-symbols-outlined text-[20px]">delete</span>
+                            </button>
+                            @endif
+                            <a href="{{ route('pos.receipt.show', $order->id) }}" class="shrink-0 flex items-center justify-center p-2 rounded-xl bg-surface border border-outline-variant text-on-surface hover:bg-surface-dim hover:text-primary transition-colors" title="Cetak Ulang Struk">
+                                <span class="material-symbols-outlined text-[20px]">print</span>
+                            </a>
+                        </div>
                     </div>
                     @empty
                     <div class="py-8 text-center text-on-surface-variant">
@@ -113,4 +124,78 @@
             </div>
         </div>
     </div>
+
+    <!-- Void Modal -->
+    <div id="voidModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl">
+            <h3 class="text-title-md font-bold text-danger mb-2">Void Transaksi</h3>
+            <p class="text-body-sm text-on-surface-variant mb-6">Masukkan PIN/Password Admin untuk membatalkan transaksi <span id="voidOrderNumber" class="font-bold"></span>.</p>
+            
+            <input type="password" id="voidPinInput" placeholder="Masukkan PIN" class="w-full py-3 px-4 mb-4 rounded-xl border border-outline-variant text-center tracking-widest text-title-sm font-bold focus:border-danger focus:ring-1 focus:ring-danger/20">
+            
+            <div class="flex gap-3 justify-center">
+                <button type="button" onclick="closeVoidModal()" class="flex-1 py-3 bg-surface border border-outline-variant text-on-surface rounded-xl font-semibold text-body-sm hover:bg-surface-dim transition-colors">Batal</button>
+                <button type="button" onclick="submitVoid()" id="btnSubmitVoid" class="flex-1 py-3 bg-danger text-white rounded-xl font-bold text-body-sm hover:bg-red-700 transition-colors shadow-lg shadow-danger/20">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        let voidOrderId = null;
+
+        function openVoidModal(id, orderNumber) {
+            voidOrderId = id;
+            document.getElementById('voidOrderNumber').textContent = orderNumber;
+            document.getElementById('voidPinInput').value = '';
+            document.getElementById('voidModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('voidPinInput').focus(), 100);
+        }
+
+        function closeVoidModal() {
+            document.getElementById('voidModal').classList.add('hidden');
+            voidOrderId = null;
+        }
+
+        async function submitVoid() {
+            if (!voidOrderId) return;
+            const pin = document.getElementById('voidPinInput').value;
+            if (!pin) {
+                alert('Silakan masukkan PIN!');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitVoid');
+            btn.disabled = true;
+            btn.textContent = 'Memproses...';
+
+            try {
+                const res = await fetch(`/pos/orders/${voidOrderId}/cancel`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ pin: pin })
+                });
+
+                const data = await res.json();
+                
+                if (res.ok && data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Gagal membatalkan transaksi.');
+                    btn.disabled = false;
+                    btn.textContent = 'Hapus';
+                }
+            } catch (error) {
+                alert('Terjadi kesalahan jaringan.');
+                btn.disabled = false;
+                btn.textContent = 'Hapus';
+            }
+        }
+    </script>
+    @endpush
 </x-layouts.pos>

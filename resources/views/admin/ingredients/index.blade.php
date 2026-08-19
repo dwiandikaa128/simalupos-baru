@@ -410,15 +410,26 @@
                     <h3 class="text-title-sm font-bold mb-4">Pembelian Terakhir</h3>
                     <div class="space-y-3 max-h-[360px] overflow-y-auto pr-1">
                         @forelse($recentPurchases as $purchase)
-                        <div class="p-3 rounded-xl bg-surface border border-outline-variant">
-                            <div class="flex justify-between gap-3 text-body-sm font-semibold">
-                                <span>{{ $purchase->ingredient->name }}</span>
-                                <span class="text-right">{{ format_rupiah($purchase->total_cost) }}</span>
+                        <div class="p-3 rounded-xl bg-surface border border-outline-variant group">
+                            <div class="flex justify-between items-start gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between gap-2 text-body-sm font-semibold">
+                                        <span class="truncate">{{ $purchase->ingredient->name }}</span>
+                                        <span class="text-right whitespace-nowrap text-success">{{ format_rupiah($purchase->total_cost) }}</span>
+                                    </div>
+                                    <p class="text-label-sm text-on-surface-variant mt-0.5">
+                                        +{{ format_qty($purchase->quantity) }} {{ $purchase->ingredient->unit }}
+                                        <span class="text-[11px] text-slate-400">· {{ $purchase->purchased_at->format('d/m H:i') }}</span>
+                                    </p>
+                                </div>
+                                <form method="POST" action="{{ route('admin.ingredient-purchases.destroy', $purchase) }}" class="shrink-0">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" onclick="deletePurchaseWithPin(this)" class="w-7 h-7 bg-red-100 text-danger rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200" title="Hapus stok masuk / barang masuk (Void)">
+                                        <span class="material-symbols-outlined text-[16px]">delete</span>
+                                    </button>
+                                </form>
                             </div>
-                            <p class="text-label-sm text-on-surface-variant mt-1">
-                                {{ format_qty($purchase->quantity) }} {{ $purchase->ingredient->unit }}
-                                - {{ format_rupiah($purchase->ingredient->cost_per_base_unit) }}/1 {{ $purchase->ingredient->unit }}
-                            </p>
                         </div>
                         @empty
                         <p class="text-body-sm text-on-surface-variant">Belum ada pembelian.</p>
@@ -431,6 +442,25 @@
 
     @push('scripts')
     <script>
+        function deletePurchaseWithPin(button) {
+            const pin = prompt('Hapus / batalkan riwayat barang masuk ini? Stok bahan yang telah ditambahkan akan DIKURANGI kembali!\n\nMasukkan PIN / Password Keamanan Admin (Void):');
+            if (pin === null) return;
+            if (!pin.trim()) {
+                alert('PIN / Password Keamanan wajib diisi.');
+                return;
+            }
+            
+            const form = button.closest('form');
+            let pinInput = form.querySelector('input[name="pin"]');
+            if (!pinInput) {
+                pinInput = document.createElement('input');
+                pinInput.type = 'hidden';
+                pinInput.name = 'pin';
+                form.appendChild(pinInput);
+            }
+            pinInput.value = pin;
+            form.submit();
+        }
         function applyDefaultUnit(select) {
             const unit = select.options[select.selectedIndex]?.dataset.defaultUnit;
             const unitSelect = document.getElementById('ingredient-unit-select');

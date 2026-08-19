@@ -1,19 +1,19 @@
 <x-layouts.pos :title="'Kasir'">
-    <div class="h-[calc(100vh-4rem)] lg:h-[100vh] flex overflow-hidden w-full relative">
+    <div class="h-[calc(100vh-4rem)] md:h-[100vh] flex overflow-hidden w-full relative">
         <!-- Products Area -->
         <div class="flex-1 flex flex-col bg-surface min-w-0 w-full">
             <!-- Top search & filter -->
-            <div class="p-4 bg-white border-b border-outline-variant flex flex-col gap-3 relative z-40">
+            <div class="p-3 md:p-4 bg-white border-b border-outline-variant flex flex-col gap-3 relative z-40">
                 <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
                     <div class="relative flex-1 max-w-2xl">
                         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-                        <input type="text" id="searchInput" placeholder="Cari nama menu..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-outline-variant bg-surface text-body-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container/20">
+                        <input type="text" id="searchInput" placeholder="Cari nama menu..." class="w-full pl-10 pr-4 py-2.5 md:py-3 rounded-xl border border-outline-variant bg-surface text-body-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container/20">
                     </div>
                     <button
                         type="button"
                         id="printerConnectButton"
                         onclick="connectPrinterFirstTime()"
-                        class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-outline-variant bg-white text-on-surface text-label-md font-semibold hover:bg-surface-dim transition-colors sm:w-auto"
+                        class="inline-flex items-center justify-center gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-xl border border-outline-variant bg-white text-on-surface text-label-md font-semibold hover:bg-surface-dim transition-colors sm:w-auto"
                         title="Hubungkan printer Bluetooth"
                     >
                         <span class="material-symbols-outlined text-[20px]" id="printerStatusIcon">print</span>
@@ -24,17 +24,17 @@
                 <div class="relative">
                     <div class="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10"></div>
                     <div class="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" id="categoryFilter">
-                        <button class="px-4 py-2.5 rounded-xl text-label-md font-semibold whitespace-nowrap bg-primary-container text-white shadow-sm cat-btn" data-id="">Semua</button>
+                        <button class="px-3.5 md:px-4 py-2 md:py-2.5 rounded-xl text-label-md font-semibold whitespace-nowrap bg-primary-container text-white shadow-sm cat-btn" data-id="">Semua</button>
                         @foreach($categories as $cat)
-                        <button class="px-4 py-2.5 rounded-xl text-label-md font-semibold whitespace-nowrap bg-surface border border-outline-variant text-on-surface hover:bg-surface-dim transition-colors cat-btn" data-id="{{ $cat->id }}">{{ $cat->name }}</button>
+                        <button class="px-3.5 md:px-4 py-2 md:py-2.5 rounded-xl text-label-md font-semibold whitespace-nowrap bg-surface border border-outline-variant text-on-surface hover:bg-surface-dim transition-colors cat-btn" data-id="{{ $cat->id }}">{{ $cat->name }}</button>
                         @endforeach
                     </div>
                 </div>
             </div>
 
             <!-- Product Grid -->
-            <div class="flex-1 overflow-y-auto p-4">
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4" id="productsGrid">
+            <div class="flex-1 overflow-y-auto p-3 md:p-4">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4" id="productsGrid">
                     @foreach($products as $product)
                     @php($hasEnoughStock = $product->getAttribute('has_enough_stock') !== false)
                     <div
@@ -46,11 +46,11 @@
                         @if($hasEnoughStock) onclick="openProductModal({{ $product->toJson() }})" @endif
                     >
                         @if($product->photo)
-                        <div class="h-32 bg-surface-dim relative">
+                        <div class="h-28 md:h-32 bg-surface-dim relative">
                             <img src="{{ Storage::url($product->photo) }}" class="w-full h-full object-cover {{ $hasEnoughStock ? '' : 'grayscale opacity-70' }}">
                         </div>
                         @else
-                        <div class="h-32 {{ $hasEnoughStock ? 'bg-primary-container/10' : 'bg-surface-dim' }} flex items-center justify-center"><span class="material-symbols-outlined text-[40px] {{ $hasEnoughStock ? 'text-primary-container/40' : 'text-on-surface-variant/40' }}">coffee</span></div>
+                        <div class="h-28 md:h-32 {{ $hasEnoughStock ? 'bg-primary-container/10' : 'bg-surface-dim' }} flex items-center justify-center"><span class="material-symbols-outlined text-[36px] md:text-[40px] {{ $hasEnoughStock ? 'text-primary-container/40' : 'text-on-surface-variant/40' }}">coffee</span></div>
                         @endif
                         @unless($hasEnoughStock)
                         <div class="absolute top-2 left-2 right-2">
@@ -60,11 +60,11 @@
                             </span>
                         </div>
                         @endunless
-                        <div class="p-3">
+                        <div class="p-2.5 md:p-3">
                             <h4 class="font-semibold text-body-sm mb-1 leading-tight">{{ $product->name }}</h4>
                             <p class="text-primary-container font-bold text-label-md">{{ format_rupiah($product->base_price) }}</p>
                             @unless($hasEnoughStock)
-                            <p class="mt-2 text-[11px] leading-4 font-semibold text-danger">
+                            <p class="mt-1.5 text-[11px] leading-4 font-semibold text-danger">
                                 {{ $product->getAttribute('stock_unavailable_message') ?: 'Stok bahan tidak cukup' }}
                             </p>
                             @endunless
@@ -75,24 +75,50 @@
             </div>
         </div>
 
-        <!-- Cart Sidebar (Modal on Mobile/Tablet, Sidebar on Desktop) -->
-        <div id="cartSidebar" class="fixed lg:static inset-0 z-50 lg:z-30 flex items-center justify-center lg:block p-4 lg:p-0 bg-black/50 backdrop-blur-sm lg:backdrop-blur-none lg:bg-transparent transition-all duration-300 opacity-0 pointer-events-none lg:opacity-100 lg:pointer-events-auto lg:w-[400px] flex-shrink-0" onclick="toggleCart()">
-            <div id="cartContainer" class="bg-white rounded-3xl lg:rounded-none w-full max-w-md lg:max-w-full h-[85vh] lg:h-full flex flex-col shadow-2xl lg:shadow-none transform scale-95 lg:scale-100 transition-transform duration-300 border-0 lg:border-l border-outline-variant overflow-hidden" onclick="event.stopPropagation()">
+        <!-- Cart Sidebar (Modal on Mobile, Sidebar on Tablet/Desktop) -->
+        <div id="cartSidebar" class="fixed md:static inset-0 z-50 md:z-30 flex items-center justify-center md:block p-4 md:p-0 bg-black/50 backdrop-blur-sm md:backdrop-blur-none md:bg-transparent transition-all duration-300 opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto md:w-[330px] lg:w-[360px] xl:w-[400px] flex-shrink-0" onclick="toggleCart()">
+            <div id="cartContainer" class="bg-white rounded-3xl md:rounded-none w-full max-w-md md:max-w-full h-[85vh] md:h-full flex flex-col shadow-2xl md:shadow-none transform scale-95 md:scale-100 transition-transform duration-300 border-0 md:border-l border-outline-variant overflow-hidden" onclick="event.stopPropagation()">
                 <!-- Header -->
-                <div class="p-4 border-b border-outline-variant flex items-center justify-between bg-surface lg:bg-white">
+                <div class="p-3.5 md:p-4 border-b border-outline-variant flex items-center justify-between bg-surface md:bg-white">
                     <h2 class="text-title-md font-bold flex items-center gap-2"><span class="material-symbols-outlined">shopping_cart</span> Pesanan Baru</h2>
                     <div class="flex gap-2">
-                        <button onclick="document.getElementById('heldOrdersModal').classList.remove('hidden')" class="text-primary hover:bg-primary-container/10 px-2 lg:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 text-label-sm font-bold border border-primary/20 bg-primary/5">
+                        <button onclick="document.getElementById('heldOrdersModal').classList.remove('hidden')" class="text-primary hover:bg-primary-container/10 px-2 md:px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 text-label-sm font-bold border border-primary/20 bg-primary/5">
                             <span class="material-symbols-outlined text-[18px]">pause_circle</span> <span class="hidden sm:inline">Draft</span> ({{ $heldOrders->count() }})
                         </button>
                         <button onclick="clearCart()" class="text-danger hover:bg-red-50 p-2 rounded-lg transition-colors" title="Kosongkan Keranjang"><span class="material-symbols-outlined">delete_sweep</span></button>
-                        <button onclick="toggleCart()" class="lg:hidden text-on-surface hover:bg-surface-dim p-2 rounded-lg transition-colors"><span class="material-symbols-outlined">close</span></button>
+                        <button onclick="toggleCart()" class="md:hidden text-on-surface hover:bg-surface-dim p-2 rounded-lg transition-colors"><span class="material-symbols-outlined">close</span></button>
                     </div>
                 </div>
 
             <!-- Order Details -->
             <div class="p-4 border-b border-outline-variant space-y-3 bg-surface/50">
-                <input type="text" id="customerName" placeholder="Nama Pelanggan" class="w-full py-2.5 px-3 text-body-sm rounded-xl border border-outline-variant focus:border-primary-container">
+                <!-- Member Selection Badge / Search Button -->
+                <div class="p-3 bg-white border border-outline-variant rounded-xl flex items-center justify-between gap-2" id="memberWidgetContainer">
+                    <div id="memberUnselectedState" class="flex items-center justify-between w-full">
+                        <span class="text-xs font-medium text-on-surface-variant flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">card_membership</span> Member Simalu: <em class="text-slate-400">Umum / Tidak ada</em>
+                        </span>
+                        <button type="button" onclick="openCustomerModal()" class="px-2.5 py-1 text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors">
+                            Pilih / Daftar
+                        </button>
+                    </div>
+                    <div id="memberSelectedState" class="hidden flex items-center justify-between w-full">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div class="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">person</span>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-on-surface truncate" id="selectedMemberName">Name</p>
+                                <p class="text-[10px] text-emerald-600 font-semibold" id="selectedMemberBalance">Saldo: Rp 0</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="clearSelectedCustomer()" class="p-1 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Member">
+                            <span class="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="text" id="customerName" placeholder="Nama Pelanggan / Catatan Meja" class="w-full py-2.5 px-3 text-body-sm rounded-xl border border-outline-variant focus:border-primary-container">
                 <div class="flex gap-2">
                     <input type="text" id="tableNumber" placeholder="No. Meja" class="w-1/3 py-2.5 px-3 text-body-sm rounded-xl border border-outline-variant focus:border-primary-container">
                     <select id="orderType" class="flex-1 py-2.5 px-3 text-body-sm rounded-xl border border-outline-variant focus:border-primary-container">
@@ -100,6 +126,13 @@
                         <option value="takeaway">Takeaway</option>
                         <option value="online">Online/Ojol</option>
                     </select>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <span class="text-body-sm text-on-surface-variant font-semibold whitespace-nowrap">Diskon Manual:</span>
+                    <div class="relative flex-1">
+                        <input type="number" id="manualDiscountPercent" min="0" max="100" placeholder="0" class="w-full py-2.5 px-3 pr-8 text-body-sm rounded-xl border border-outline-variant focus:border-primary-container">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant font-bold">%</span>
+                    </div>
                 </div>
             </div>
 
@@ -179,11 +212,27 @@
 
             <div class="mb-6">
                 <p class="font-semibold text-label-md mb-3">Metode Pembayaran</p>
-                <div class="grid grid-cols-4 gap-2 lg:gap-3">
-                    <button class="pay-method-btn active py-2 lg:py-3 border border-primary bg-primary/5 text-primary rounded-xl font-semibold flex flex-col items-center gap-1 text-label-sm lg:text-body-sm" data-method="cash"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">payments</span> Cash</button>
-                    <button class="pay-method-btn py-2 lg:py-3 border border-outline-variant bg-white rounded-xl font-semibold flex flex-col items-center gap-1 text-label-sm lg:text-body-sm" data-method="qris"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">qr_code_2</span> QRIS</button>
-                    <button class="pay-method-btn py-2 lg:py-3 border border-outline-variant bg-white rounded-xl font-semibold flex flex-col items-center gap-1 text-label-sm lg:text-body-sm" data-method="debit"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">credit_card</span> Debit/CC</button>
-                    <button class="pay-method-btn py-2 lg:py-3 border border-outline-variant bg-white rounded-xl font-semibold flex flex-col items-center gap-1 text-label-sm lg:text-body-sm" data-method="ojol"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">two_wheeler</span> Ojol</button>
+                <div class="grid grid-cols-5 gap-1.5 lg:gap-2">
+                    <button class="pay-method-btn active py-2 lg:py-3 border border-primary bg-primary/5 text-primary rounded-xl font-semibold flex flex-col items-center gap-1 text-[11px] lg:text-body-sm" data-method="cash"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">payments</span> Cash</button>
+                    <button class="pay-method-btn py-2 lg:py-3 border border-outline-variant bg-white rounded-xl font-semibold flex flex-col items-center gap-1 text-[11px] lg:text-body-sm" data-method="simalu_membership"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">card_membership</span> Member</button>
+                    <button class="pay-method-btn py-2 lg:py-3 border border-outline-variant bg-white rounded-xl font-semibold flex flex-col items-center gap-1 text-[11px] lg:text-body-sm" data-method="qris"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">qr_code_2</span> QRIS</button>
+                    <button class="pay-method-btn py-2 lg:py-3 border border-outline-variant bg-white rounded-xl font-semibold flex flex-col items-center gap-1 text-[11px] lg:text-body-sm" data-method="debit"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">credit_card</span> Debit/CC</button>
+                    <button class="pay-method-btn py-2 lg:py-3 border border-outline-variant bg-white rounded-xl font-semibold flex flex-col items-center gap-1 text-[11px] lg:text-body-sm" data-method="ojol"><span class="material-symbols-outlined text-[20px] lg:text-[24px]">two_wheeler</span> Ojol</button>
+                </div>
+            </div>
+
+            <!-- Simalu Membership Info Container -->
+            <div id="membershipPaymentInfo" class="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/5 hidden space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-on-surface-variant font-medium">Member Terpilih:</span>
+                    <strong class="text-on-surface font-bold" id="membershipModalMemberName">Belum Dipilih</strong>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-on-surface-variant font-medium">Sisa Saldo Simalu Membership:</span>
+                    <strong class="text-emerald-600 font-bold" id="membershipModalMemberBalance">Rp 0</strong>
+                </div>
+                <div id="membershipBalanceWarning" class="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-semibold hidden">
+                    ⚠️ Saldo member tidak mencukupi untuk membayar pesanan ini.
                 </div>
             </div>
 
@@ -216,9 +265,17 @@
                 <div class="grid grid-cols-4 gap-2 mt-3" id="quickCashButtons">
                     <!-- Populated via JS -->
                 </div>
-                <div class="mt-4 p-4 bg-green-50 rounded-xl border border-green-200 flex justify-between items-center hidden" id="changeContainer">
-                    <span class="text-body-sm font-bold text-green-800">Kembalian</span>
-                    <span class="text-title-sm font-bold text-success" id="changeDisplay">Rp 0</span>
+                <div class="mt-4 p-4 bg-green-50 rounded-xl border border-green-200 hidden space-y-2" id="changeContainer">
+                    <div class="flex justify-between items-center">
+                        <span class="text-body-sm font-bold text-green-800">Kembalian</span>
+                        <span class="text-title-sm font-bold text-success" id="changeDisplay">Rp 0</span>
+                    </div>
+                    <div id="saveChangeOption" class="pt-2 border-t border-green-200 hidden">
+                        <label class="flex items-center gap-2 text-xs font-bold text-emerald-800 cursor-pointer">
+                            <input type="checkbox" id="saveChangeToMembership" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                            <span>Simpan uang kembalian ke Saldo Simalu Membership</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -236,14 +293,14 @@
     </div>
     @if($heldOrders->count() > 0)
     <!-- Mobile Drafts Toggle Button -->
-    <button onclick="document.getElementById('heldOrdersModal').classList.remove('hidden')" class="lg:hidden fixed bottom-40 right-4 z-20 bg-white text-primary p-4 rounded-full shadow-2xl flex items-center gap-2 font-bold border border-primary/20 hover:bg-primary/5 transition-transform hover:scale-105 active:scale-95">
+    <button onclick="document.getElementById('heldOrdersModal').classList.remove('hidden')" class="md:hidden fixed bottom-40 right-4 z-20 bg-white text-primary p-4 rounded-full shadow-2xl flex items-center gap-2 font-bold border border-primary/20 hover:bg-primary/5 transition-transform hover:scale-105 active:scale-95">
         <span class="material-symbols-outlined">pause_circle</span>
         <span class="bg-primary/10 text-primary text-[12px] px-2 py-0.5 rounded-full">{{ $heldOrders->count() }}</span>
     </button>
     @endif
 
     <!-- Mobile Cart Toggle Button -->
-    <button onclick="toggleCart()" class="lg:hidden fixed bottom-20 right-4 z-20 bg-primary text-white p-4 rounded-full shadow-2xl flex items-center gap-2 font-bold hover:bg-primary-container transition-transform hover:scale-105 active:scale-95">
+    <button onclick="toggleCart()" class="md:hidden fixed bottom-20 right-4 z-20 bg-primary text-white p-4 rounded-full shadow-2xl flex items-center gap-2 font-bold hover:bg-primary-container transition-transform hover:scale-105 active:scale-95">
         <span class="material-symbols-outlined">shopping_bag</span>
         <span id="mobileCartCount" class="bg-white text-primary text-[12px] px-2 py-0.5 rounded-full">0</span>
     </button>
@@ -288,6 +345,53 @@
             <div class="flex gap-3 justify-center" id="customDialogButtons">
                 <button id="customDialogCancelBtn" class="flex-1 py-3 bg-surface border border-outline-variant text-on-surface rounded-xl font-semibold text-body-sm hover:bg-surface-dim transition-colors hidden">Batal</button>
                 <button id="customDialogConfirmBtn" class="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-body-sm hover:bg-primary-container transition-colors shadow-lg shadow-primary/20">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POS Customer Selection & Registration Modal -->
+    <div id="customerPosModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-5 max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center pb-3 border-b border-outline-variant">
+                <h3 class="text-title-md font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">card_membership</span>
+                    Pilih Member Simalu
+                </h3>
+                <button onclick="closeCustomerModal()" class="p-1 rounded-lg text-on-surface-variant hover:bg-surface-dim">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Tab Buttons: Search vs Register -->
+            <div class="flex border-b border-outline-variant mt-3 mb-4">
+                <button type="button" onclick="switchCustomerTab('search')" id="tabBtnSearchCust" class="flex-1 py-2 text-xs font-bold text-primary border-b-2 border-primary">Cari Member</button>
+                <button type="button" onclick="switchCustomerTab('register')" id="tabBtnRegCust" class="flex-1 py-2 text-xs font-bold text-on-surface-variant border-b-2 border-transparent">Member Baru</button>
+            </div>
+
+            <!-- Tab Content: Search -->
+            <div id="tabContentSearchCust" class="flex-1 overflow-y-auto space-y-3">
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                    <input type="text" id="inputSearchCust" placeholder="Ketik nama atau No. WhatsApp..." class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-outline-variant focus:border-primary">
+                </div>
+                <div id="customerSearchResults" class="space-y-1.5 max-h-60 overflow-y-auto">
+                    <div class="text-center py-6 text-xs text-on-surface-variant">Ketik untuk mencari member...</div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Register -->
+            <div id="tabContentRegCust" class="hidden space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-on-surface-variant block mb-1">Nama Member</label>
+                    <input type="text" id="inputRegCustName" placeholder="Contoh: Budi Santoso" class="w-full py-2 px-3 text-xs rounded-xl border border-outline-variant">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-on-surface-variant block mb-1">Nomor WhatsApp</label>
+                    <input type="text" id="inputRegCustPhone" placeholder="Contoh: 081234567890" class="w-full py-2 px-3 text-xs rounded-xl border border-outline-variant">
+                </div>
+                <button type="button" onclick="saveNewPosCustomer()" class="w-full py-2.5 bg-primary text-white rounded-xl text-xs font-bold shadow hover:bg-primary-container">
+                    Daftarkan Member Baru
+                </button>
             </div>
         </div>
     </div>
@@ -584,6 +688,19 @@
             }
         }
 
+        // Cash Drawer Kick Command (ESC p) - untuk membuka laci elektrik via RJ-11
+        async function openCashDrawer() {
+            try {
+                const characteristic = await ensureBluetoothPrinterCharacteristic();
+                // ESC p m t1 t2 - Pin 2 (0x00), pulse ON 25ms*t1, pulse OFF 25ms*t2
+                const kickDrawerPin2 = Uint8Array.from([0x1B, 0x70, 0x00, 0x19, 0xFA]);
+                await writePrinterBytes(characteristic, kickDrawerPin2);
+                console.log('Cash drawer opened successfully');
+            } catch (error) {
+                console.warn('Gagal membuka laci kasir:', error);
+            }
+        }
+
         function onPrinterDisconnected() {
             bluetoothPrinterCharacteristic = null;
             setPrinterStatus('connecting');
@@ -646,6 +763,9 @@
             document.getElementById('customerName').value = '';
             document.getElementById('tableNumber').value = '';
             document.getElementById('orderType').value = 'dine_in';
+            if (document.getElementById('manualDiscountPercent')) {
+                document.getElementById('manualDiscountPercent').value = '';
+            }
             document.getElementById('amountPaid').value = '';
             document.getElementById('changeContainer').classList.add('hidden');
             document.getElementById('btnProcessPayment').innerHTML = 'Proses Pembayaran';
@@ -1188,7 +1308,13 @@
         function calculateTotals() {
             orderSubtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             
-            // Re-calculate based on UI state (no active promo from backend yet in JS)
+            let manualDiscountPercent = Number(document.getElementById('manualDiscountPercent')?.value) || 0;
+            if (manualDiscountPercent > 100) manualDiscountPercent = 100;
+            if (manualDiscountPercent < 0) manualDiscountPercent = 0;
+            
+            currentDiscount = orderSubtotal * (manualDiscountPercent / 100);
+            
+            // Re-calculate based on UI state
             let baseForTaxAndService = orderSubtotal - currentDiscount;
             
             orderServiceCharge = baseForTaxAndService * serviceChargeRate;
@@ -1210,12 +1336,144 @@
             orderTotal = baseForTaxAndService + orderServiceCharge + orderTax;
 
             document.getElementById('subtotalDisplay').textContent = formatRupiah(orderSubtotal);
+            document.getElementById('discountDisplay').textContent = '-' + formatRupiah(currentDiscount);
             if(document.getElementById('serviceChargeDisplay')) {
                 document.getElementById('serviceChargeDisplay').textContent = formatRupiah(orderServiceCharge);
             }
             document.getElementById('taxDisplay').textContent = formatRupiah(orderTax);
             document.getElementById('totalDisplay').textContent = formatRupiah(orderTotal);
             document.getElementById('paymentTotalDisplay').textContent = formatRupiah(orderTotal);
+        }
+        
+        document.getElementById('manualDiscountPercent')?.addEventListener('input', calculateTotals);
+
+        // Member Selection State
+        let selectedCustomer = null;
+
+        function openCustomerModal() {
+            document.getElementById('customerPosModal').classList.remove('hidden');
+            document.getElementById('inputSearchCust').value = '';
+            searchPosCustomers('');
+        }
+
+        function closeCustomerModal() {
+            document.getElementById('customerPosModal').classList.add('hidden');
+        }
+
+        function switchCustomerTab(tab) {
+            const btnSearch = document.getElementById('tabBtnSearchCust');
+            const btnReg = document.getElementById('tabBtnRegCust');
+            const contentSearch = document.getElementById('tabContentSearchCust');
+            const contentReg = document.getElementById('tabContentRegCust');
+
+            if (tab === 'search') {
+                btnSearch.className = 'flex-1 py-2 text-xs font-bold text-primary border-b-2 border-primary';
+                btnReg.className = 'flex-1 py-2 text-xs font-bold text-on-surface-variant border-b-2 border-transparent';
+                contentSearch.classList.remove('hidden');
+                contentReg.classList.add('hidden');
+            } else {
+                btnReg.className = 'flex-1 py-2 text-xs font-bold text-primary border-b-2 border-primary';
+                btnSearch.className = 'flex-1 py-2 text-xs font-bold text-on-surface-variant border-b-2 border-transparent';
+                contentReg.classList.remove('hidden');
+                contentSearch.classList.add('hidden');
+            }
+        }
+
+        let custSearchTimer = null;
+        document.getElementById('inputSearchCust')?.addEventListener('input', (e) => {
+            clearTimeout(custSearchTimer);
+            custSearchTimer = setTimeout(() => {
+                searchPosCustomers(e.target.value);
+            }, 300);
+        });
+
+        async function searchPosCustomers(query) {
+            const container = document.getElementById('customerSearchResults');
+            container.innerHTML = '<div class="text-center py-4 text-xs text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-[16px]">sync</span> Memuat member...</div>';
+
+            try {
+                const res = await fetch(`{{ route('pos.customers.search') }}?query=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="text-center py-6 text-xs text-on-surface-variant">Member tidak ditemukan. <br><button type="button" onclick="switchCustomerTab(\'register\')" class="text-primary font-bold hover:underline mt-1">Daftarkan Member Baru</button></div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.forEach(c => {
+                    const item = document.createElement('div');
+                    item.className = 'p-3 border border-outline-variant rounded-xl flex items-center justify-between hover:bg-surface-dim cursor-pointer transition-colors';
+                    item.onclick = () => selectPosCustomer(c);
+                    item.innerHTML = `
+                        <div>
+                            <p class="text-xs font-bold text-on-surface">${escapeHtml(c.name)}</p>
+                            <p class="text-[10px] text-on-surface-variant font-mono">${escapeHtml(c.phone)}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-emerald-600">Rp ${Number(c.balance).toLocaleString('id-ID')}</p>
+                            <span class="text-[10px] text-primary font-semibold">Pilih &rarr;</span>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (err) {
+                container.innerHTML = '<div class="text-center py-4 text-xs text-rose-500">Gagal memuat data member.</div>';
+            }
+        }
+
+        function selectPosCustomer(customer) {
+            selectedCustomer = customer;
+            document.getElementById('memberUnselectedState').classList.add('hidden');
+            document.getElementById('memberSelectedState').classList.remove('hidden');
+            document.getElementById('selectedMemberName').textContent = customer.name;
+            document.getElementById('selectedMemberBalance').textContent = 'Saldo: ' + formatRupiah(customer.balance);
+            
+            // Auto fill customer name input if empty
+            if (!document.getElementById('customerName').value) {
+                document.getElementById('customerName').value = customer.name;
+            }
+
+            closeCustomerModal();
+            checkPaymentStatus();
+        }
+
+        function clearSelectedCustomer() {
+            selectedCustomer = null;
+            document.getElementById('memberUnselectedState').classList.remove('hidden');
+            document.getElementById('memberSelectedState').classList.add('hidden');
+            document.getElementById('saveChangeOption').classList.add('hidden');
+            if (document.getElementById('saveChangeToMembership')) {
+                document.getElementById('saveChangeToMembership').checked = false;
+            }
+            checkPaymentStatus();
+        }
+
+        async function saveNewPosCustomer() {
+            const name = document.getElementById('inputRegCustName').value.trim();
+            const phone = document.getElementById('inputRegCustPhone').value.trim();
+
+            if (!name || !phone) {
+                return await showDialog('Form Inkomplit', 'Silakan isi Nama dan Nomor WhatsApp member.', 'alert');
+            }
+
+            try {
+                const res = await fetch("{{ route('pos.customers.store') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: JSON.stringify({ name, phone })
+                });
+
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || (data.errors ? Object.values(data.errors).flat()[0] : 'Gagal mendaftar member'));
+                }
+
+                selectPosCustomer(data.customer);
+                await showDialog('Berhasil', `Member '${data.customer.name}' berhasil terdaftar!`, 'info');
+            } catch (err) {
+                await showDialog('Gagal Mendaftar', err.message, 'error');
+            }
         }
 
         // Payment Logic
@@ -1234,15 +1492,35 @@
                 selectedPaymentMethod = target.dataset.method;
                 const cashInput = document.getElementById('cashInputContainer');
                 const cardOptionContainer = document.getElementById('cardOptionContainer');
+                const membershipInfo = document.getElementById('membershipPaymentInfo');
                 
                 if (selectedPaymentMethod === 'cash') {
                     cashInput.classList.remove('hidden');
                     cardOptionContainer.classList.add('hidden');
+                    membershipInfo.classList.add('hidden');
                     resetCardSelection();
                     generateQuickCashButtons();
+                } else if (selectedPaymentMethod === 'simalu_membership') {
+                    cashInput.classList.add('hidden');
+                    cardOptionContainer.classList.add('hidden');
+                    membershipInfo.classList.remove('hidden');
+                    resetCardSelection();
+                    
+                    const nameElem = document.getElementById('membershipModalMemberName');
+                    const balElem = document.getElementById('membershipModalMemberBalance');
+                    
+                    if (selectedCustomer) {
+                        nameElem.textContent = selectedCustomer.name;
+                        balElem.textContent = formatRupiah(selectedCustomer.balance);
+                    } else {
+                        nameElem.textContent = 'Belum Dipilih';
+                        balElem.textContent = 'Rp 0';
+                    }
+                    checkPaymentStatus();
                 } else if (selectedPaymentMethod === 'debit') {
                     cashInput.classList.add('hidden');
                     cardOptionContainer.classList.remove('hidden');
+                    membershipInfo.classList.add('hidden');
                     // Automatically click default card option
                     const defaultOpt = document.querySelector('.card-opt-btn[data-option="debit_bca"]');
                     if (defaultOpt) {
@@ -1251,6 +1529,7 @@
                 } else {
                     cashInput.classList.add('hidden');
                     cardOptionContainer.classList.add('hidden');
+                    membershipInfo.classList.add('hidden');
                     resetCardSelection();
                     document.getElementById('btnProcessPayment').disabled = false;
                 }
@@ -1312,15 +1591,41 @@
             const btn = document.getElementById('btnProcessPayment');
             const changeContainer = document.getElementById('changeContainer');
             const changeDisplay = document.getElementById('changeDisplay');
+            const saveChangeOption = document.getElementById('saveChangeOption');
 
             if (selectedPaymentMethod === 'cash') {
                 if (paid >= orderTotal) {
                     btn.disabled = false;
                     changeContainer.classList.remove('hidden');
-                    changeDisplay.textContent = formatRupiah(paid - orderTotal);
+                    const changeAmount = paid - orderTotal;
+                    changeDisplay.textContent = formatRupiah(changeAmount);
+
+                    if (changeAmount > 0 && selectedCustomer) {
+                        saveChangeOption.classList.remove('hidden');
+                    } else {
+                        saveChangeOption.classList.add('hidden');
+                    }
                 } else {
                     btn.disabled = true;
                     changeContainer.classList.add('hidden');
+                }
+            } else if (selectedPaymentMethod === 'simalu_membership') {
+                const warningElem = document.getElementById('membershipBalanceWarning');
+                if (!selectedCustomer) {
+                    btn.disabled = true;
+                    if (warningElem) {
+                        warningElem.textContent = '⚠️ Silakan pilih member terlebih dahulu.';
+                        warningElem.classList.remove('hidden');
+                    }
+                } else if (Number(selectedCustomer.balance) < orderTotal) {
+                    btn.disabled = true;
+                    if (warningElem) {
+                        warningElem.textContent = `⚠️ Saldo member (Rp ${Number(selectedCustomer.balance).toLocaleString('id-ID')}) tidak cukup untuk bayar tagihan (Rp ${Number(orderTotal).toLocaleString('id-ID')}).`;
+                        warningElem.classList.remove('hidden');
+                    }
+                } else {
+                    btn.disabled = false;
+                    if (warningElem) warningElem.classList.add('hidden');
                 }
             } else if (selectedPaymentMethod === 'debit') {
                 if (selectedCardOption) {
@@ -1335,6 +1640,12 @@
 
         async function openPaymentModal() {
             if (cart.length === 0) return await showDialog('Keranjang Kosong', 'Silakan masukkan minimal satu produk ke keranjang untuk melakukan pembayaran.', 'alert');
+            
+            const btn = document.getElementById('btnProcessPayment');
+            if (btn) {
+                btn.innerHTML = 'Proses Pembayaran';
+            }
+
             document.getElementById('paymentModal').classList.remove('hidden');
             
             // Programmatically select Cash at open
@@ -1348,6 +1659,10 @@
         }
 
         function closePaymentModal() {
+            const btn = document.getElementById('btnProcessPayment');
+            if (btn) {
+                btn.innerHTML = 'Proses Pembayaran';
+            }
             document.getElementById('paymentModal').classList.add('hidden');
         }
 
@@ -1374,9 +1689,11 @@
                     quantity: i.qty,
                     notes: i.notes
                 })),
+                customer_id: selectedCustomer ? selectedCustomer.id : null,
                 customer_name: document.getElementById('customerName').value,
                 table_number: document.getElementById('tableNumber').value,
                 order_type: document.getElementById('orderType').value,
+                manual_discount_percent: Number(document.getElementById('manualDiscountPercent')?.value) || 0,
                 held_order_id: currentHeldOrderId,
                 payment_method: apiPaymentMethod,
                 payment_option: selectedCardOption
@@ -1398,9 +1715,11 @@
 
                 // 2. Process Payment
                 const payPayload = {
+                    customer_id: selectedCustomer ? selectedCustomer.id : null,
                     payment_method: apiPaymentMethod,
                     payment_option: selectedCardOption,
-                    amount_paid: apiPaymentMethod === 'cash' ? document.getElementById('amountPaid').value : orderTotal
+                    amount_paid: apiPaymentMethod === 'cash' ? document.getElementById('amountPaid').value : orderTotal,
+                    save_change_to_membership: document.getElementById('saveChangeToMembership')?.checked || false
                 };
 
                 const payUrl = "{{ route('pos.orders.pay', ':id') }}".replace(':id', createData.order.id);
@@ -1422,6 +1741,11 @@
                     closePaymentModal();
                     openReceiptModal(payData.order);
                     resetCheckoutState();
+
+                    // Buka laci kasir otomatis jika pembayaran cash
+                    if (apiPaymentMethod === 'cash') {
+                        await openCashDrawer();
+                    }
 
                     if (printReceipt) {
                         await printReceiptModalToBluetooth();
@@ -1457,6 +1781,7 @@
                 customer_name: document.getElementById('customerName').value,
                 table_number: document.getElementById('tableNumber').value,
                 order_type: document.getElementById('orderType').value,
+                manual_discount_percent: Number(document.getElementById('manualDiscountPercent')?.value) || 0,
                 is_held: true,
                 held_order_id: currentHeldOrderId
             };
@@ -1483,6 +1808,24 @@
             }
         }
 
+        function resetCheckoutState() {
+            cart = [];
+            currentHeldOrderId = null;
+            if (document.getElementById('customerName')) document.getElementById('customerName').value = '';
+            if (document.getElementById('tableNumber')) document.getElementById('tableNumber').value = '';
+            if (document.getElementById('manualDiscountPercent')) document.getElementById('manualDiscountPercent').value = '';
+            const btn = document.getElementById('btnProcessPayment');
+            if (btn) {
+                btn.innerHTML = 'Proses Pembayaran';
+            }
+            clearSelectedCustomer();
+            renderCart();
+        }
+
+        function clearCart() {
+            resetCheckoutState();
+        }
+
         function resumeOrder(id) {
             const order = heldOrdersData.find(o => o.id === id);
             if(!order) return;
@@ -1501,6 +1844,14 @@
             document.getElementById('customerName').value = order.customer_name || '';
             document.getElementById('tableNumber').value = order.table_number || '';
             document.getElementById('orderType').value = order.order_type;
+            
+            let manualDiscPercent = 0;
+            if (order.subtotal > 0 && order.discount_amount > 0 && !order.voucher_code) {
+                manualDiscPercent = Math.round((order.discount_amount / order.subtotal) * 100);
+            }
+            if (document.getElementById('manualDiscountPercent')) {
+                document.getElementById('manualDiscountPercent').value = manualDiscPercent > 0 ? manualDiscPercent : '';
+            }
             
             currentHeldOrderId = order.id;
             

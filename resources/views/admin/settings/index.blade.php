@@ -10,9 +10,26 @@
             </div>
 
             <div class="bg-white rounded-xl border border-outline-variant p-6 space-y-4">
+                <h3 class="text-title-sm font-bold flex items-center gap-2 border-b border-outline-variant pb-3 mb-4"><span class="material-symbols-outlined text-danger">admin_panel_settings</span> Keamanan Kasir</h3>
+                <div>
+                    <label class="block text-label-md font-semibold mb-1">PIN / Password Void Transaksi</label>
+                    <input type="text" name="void_pin" value="{{ $settings['void_pin'] ?? '' }}" placeholder="Contoh: 123456" class="w-full py-2.5 px-4 rounded-xl border border-outline-variant text-body-sm max-w-[300px]">
+                    <p class="text-[11px] text-on-surface-variant mt-1">Kosongkan jika fitur Void/Hapus tidak diizinkan. PIN ini wajib dimasukkan saat membatalkan transaksi pesanan (Void), menghapus catatan kas keluar, atau menghapus riwayat barang masuk/stok salah input.</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-outline-variant p-6 space-y-4">
                 <h3 class="text-title-sm font-bold flex items-center gap-2 border-b border-outline-variant pb-3 mb-4"><span class="material-symbols-outlined">receipt_long</span> Struk Printer</h3>
                 <div><label class="block text-label-md font-semibold mb-1">Header Struk</label><input type="text" name="receipt_header" value="{{ $settings['receipt_header'] ?? '' }}" class="w-full py-2.5 px-4 rounded-xl border border-outline-variant text-body-sm"></div>
                 <div><label class="block text-label-md font-semibold mb-1">Footer Struk</label><input type="text" name="receipt_footer" value="{{ $settings['receipt_footer'] ?? '' }}" class="w-full py-2.5 px-4 rounded-xl border border-outline-variant text-body-sm"></div>
+                <div class="pt-2 border-t border-outline-variant">
+                    <label class="flex items-center gap-2">
+                        <input type="hidden" name="show_order_number" value="false">
+                        <input type="checkbox" name="show_order_number" value="true" {{ ($settings['show_order_number'] ?? 'true') == 'true' ? 'checked' : '' }} class="w-4 h-4 text-primary-container rounded border-outline-variant">
+                        <span class="text-body-sm font-semibold">Tampilkan Nomor Transaksi (No. TRX) pada Struk</span>
+                    </label>
+                    <p class="text-[11px] text-on-surface-variant mt-1 ml-6">Jika dinonaktifkan, nomor transaksi (#ORD-...) tidak akan tercetak pada struk belanja.</p>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl border border-outline-variant p-6 space-y-4">
